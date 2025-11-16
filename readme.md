@@ -1,185 +1,251 @@
-UTS BASIS DATA - SISTEM INFORMASI
-Hospital
 
-oleh
+# UTS BASIS DATA – SISTEM INFORMASI HOSPITAL
 
-20240803117 - Ega Putri Juliyanti
+**Nama:** Ega Putri Juliyanti
+**NIM:** 20240803117
+**Mata Kuliah:** Basis Data
+**Tugas:** UTS – Sistem Informasi Rumah Sakit
 
 
-Gambaran Umum
-Proyek ini merupakan tugas UTS mata kuliah Basis Data dengan studi kasus Sistem Informasi Rumah Sakit.
-Database dirancang menggunakan Laravel + Migration + Seeder dan mencakup elemen utama rumah sakit seperti:
+## Gambaran Umum
 
-Rumah Sakit
-Poliklinik
-Dokter
-Pasien
-Kunjungan
-Obat
-Resep
+Proyek ini merupakan tugas UTS mata kuliah Basis Data dengan studi kasus **Sistem Informasi Rumah Sakit**.
+Database dibangun menggunakan:
 
-Seluruh schema dibuat dengan relasi foreign key, konvensi Laravel, dan konsep database relasional.
+✔ Laravel
+✔ Migration & Seeder
+✔ Relasional Database & Foreign Key
+✔ Konvensi Eloquent ORM
 
-MEMBUAT PROJECT DIREKTORI
+### Entity Utama
+
+* Rumah Sakit
+* Poliklinik
+* Dokter
+* Jadwal Praktek
+* Pasien
+* Kunjungan
+* Obat
+* Resep & Resep Items
+
+
+## Struktur Proyek
+
+```
+database/
+ ├─ migrations/
+ └─ seeders/
+```
+
+
+## Membuat Project
+
+```bash
 cd /root/boilerplate
 ./start.sh uts-basisdata
+```
 
-MEMBUAT MIGRATION & SEEDER  RUMAH SAKIT
+
+## Membuat Migration & Seeder
+
+```bash
 dcm RumahSakit
 dcm Pasien
-dcm Polikinik
+dcm Poliklinik
 dcm Dokter
 dcm Kunjungan
 dcm Obat
 dcm Resep
-dcm JadwwaPraktek
+dcm JadwalPraktek
+```
 
+
+# MIGRATIONS
+
+> Setiap tabel menggunakan foreign key & relasi database relasional
+
+
+## 1 create_rumah_sakits_table
 
 ```php
-// =======================
-//  MIGRATIONS
-// =======================
-
-/ 1. create_rumah_sakits_table /
 Schema::create('rumah_sakits', function (Blueprint $table) {
-    $table->id();
-    $table->string('nama', 150);
-    $table->text('alamat');
-    $table->string('kota', 100);
-    $table->string('no_telepon', 20)->nullable();
-    $table->string('email', 150)->nullable();
-    $table->enum('status', ['aktif', 'nonaktif'])->default('aktif');
+           $table->id();
+    $table->string('kode_rs')->unique(); 
+    $table->string('nama');
+    $table->string('tipe_rs'); 
+    $table->string('alamat');
+    $table->string('kota');
+    $table->string('provinsi');
+    $table->string('telepon')->nullable();
+    $table->string('email')->nullable();
+    $table->string('website')->nullable();
     $table->timestamps();
-});
+         });
+```
 
-/2. create_polikliniks_table/
+
+## 2 create_polikliniks_table
+
+```php
 Schema::create('polikliniks', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('rumah_sakit_id')->constrained('rumah_sakits')->cascadeOnDelete();
-    $table->string('nama_poliklinik', 150);
-    $table->string('kode_poli', 20);
-    $table->text('deskripsi')->nullable();
+            $table->id();
+    $table->foreignId('rumah_sakit_id')->constrained()->cascadeOnDelete();
+    $table->string('kode_poli')->unique();
+    $table->string('nama');
+    $table->string('lantai')->nullable();
+    $table->string('jam_operasional')->nullable();
     $table->timestamps();
-});
+        });
+```
 
-/3. create_dokters_table/
+
+## 3 create_dokters_table
+
+```php
 Schema::create('dokters', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('rumah_sakit_id')->constrained('rumah_sakits')->cascadeOnDelete();
-    $table->string('nama', 150);
-    $table->enum('jenis_kelamin', ['L', 'P']);
-    $table->string('spesialisasi', 100);
-    $table->string('no_telepon', 20)->nullable();
-    $table->string('email', 150)->nullable();
-    $table->string('sip', 100)->nullable();
-    $table->enum('status', ['aktif', 'cuti', 'nonaktif'])->default('aktif');
-    $table->timestamps();
-});
+            $table->id();
+    $table->foreignId('poliklinik_id')->constrained()->cascadeOnDelete();
 
-/4. create_jadwal_prakteks_table/
-Schema::create('jadwal_prakteks', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('dokter_id')->constrained('dokters')->cascadeOnDelete();
+    $table->string('kode_dokter')->unique();
+    $table->string('nama');
+    $table->string('spesialisasi');
+    $table->string('no_str')->nullable(); // Surat Registrasi
+    $table->string('no_sip')->nullable(); // Surat Izin Praktek
+
+    // kontak
+    $table->string('no_hp')->nullable();
+    $table->string('email')->nullable();
+
+    $table->integer('pengalaman_tahun')->nullable();
+    $table->timestamps();
+        });
+```
+
+
+## 4 create_jadwal_prakteks_table
+
+```php
+ Schema::create('jadwal_prakteks', function (Blueprint $table) {
+            $table->id();
+    $table->foreignId('dokter_id')->constrained()->cascadeOnDelete();
+
     $table->enum('hari', ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu']);
     $table->time('jam_mulai');
     $table->time('jam_selesai');
-    $table->integer('kuota_pasien')->default(20);
-    $table->timestamps();
-});
 
-/5. create_pasiens_table/
+    $table->boolean('is_libur')->default(false); // kalo dokter cuti
+    $table->timestamps();
+        });
+```
+
+
+## 5 create_pasiens_table
+
+```php
 Schema::create('pasiens', function (Blueprint $table) {
-    $table->id();
-    $table->string('no_rm')->unique();
-    $table->string('nama', 150);
-    $table->string('nik', 16)->nullable();
+            $table->id();
+    $table->string('no_rm')->unique(); // Nomor Rekam Medis
+    $table->string('nik')->unique();
+    $table->string('nama');
     $table->enum('jenis_kelamin', ['L', 'P']);
-    $table->date('tanggal_lahir')->nullable();
-    $table->text('alamat')->nullable();
-    $table->string('no_telepon', 20)->nullable();
-    $table->enum('golongan_darah', ['A','B','AB','O'])->nullable();
-    $table->text('alergi')->nullable();
-    $table->timestamps();
-});
+    $table->date('tanggal_lahir');
 
-/6. create_kunjungans_table/
+    // Kontak
+    $table->string('alamat');
+    $table->string('kota')->nullable();
+    $table->string('provinsi')->nullable();
+    $table->string('no_hp')->nullable();
+
+    // Data tambahan
+    $table->string('golongan_darah')->nullable();
+    $table->string('status_pernikahan')->nullable();
+    $table->string('pekerjaan')->nullable();
+
+    // Kontak darurat
+    $table->string('kontak_darurat_nama')->nullable();
+    $table->string('kontak_darurat_hp')->nullable();
+    $table->string('kontak_darurat_hubungan')->nullable();
+
+    $table->timestamps();
+        });
+```
+
+
+## 6 create_kunjungans_table
+
+```php
 Schema::create('kunjungans', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('pasien_id')->constrained('pasiens')->cascadeOnDelete();
-    $table->foreignId('dokter_id')->constrained('dokters')->cascadeOnDelete();
-    $table->foreignId('poliklinik_id')->constrained('polikliniks')->cascadeOnDelete();
-    $table->text('keluhan')->nullable();
-    $table->text('diagnosis')->nullable();
-    $table->date('tanggal_kunjungan');
-    $table->enum('status', ['menunggu','diperiksa','selesai'])->default('menunggu');
-    $table->timestamps();
-});
+            $table->id();
+    $table->foreignId('pasien_id')->constrained()->cascadeOnDelete();
+    $table->foreignId('dokter_id')->constrained()->cascadeOnDelete();
 
-/7. create_obats_table/
+    $table->dateTime('tanggal_kunjungan');
+    $table->string('keluhan');
+    $table->text('diagnosa')->nullable();
+    $table->text('tindakan')->nullable();
+
+    $table->integer('biaya_kunjungan')->default(0);
+    $table->enum('status', ['menunggu', 'diperiksa', 'selesai'])
+          ->default('menunggu');
+
+    $table->timestamps();
+        });
+```
+
+
+## 7 create_obats_table
+
+```php
 Schema::create('obats', function (Blueprint $table) {
-    $table->id();
+            $table->id();
     $table->string('kode_obat')->unique();
-    $table->string('nama_obat');
-    $table->enum('sediaan', ['tablet','kapsul','sirup','salep','ampul']);
-    $table->enum('kategori', ['bebas','resep','narkotika']);
+    $table->string('nama');
+    $table->string('kategori'); // Tablet, sirup, salep, kapsul, injeksi
+    $table->string('jenis'); // generik / non generik
     $table->integer('stok')->default(0);
-    $table->decimal('harga', 12,2)->default(0);
-    $table->date('expired_at')->nullable();
+    $table->integer('harga')->default(0);
+    $table->string('satuan'); // strip, botol, vial
     $table->timestamps();
-});
+        });
+```
 
-/8. create_reseps_table/
+
+## 8 create_reseps_table
+
+```php
 Schema::create('reseps', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('kunjungan_id')->constrained('kunjungans')->cascadeOnDelete();
-    $table->foreignId('dokter_id')->constrained('dokters')->cascadeOnDelete();
-    $table->foreignId('pasien_id')->constrained('pasiens')->cascadeOnDelete();
-    $table->date('tanggal_resep');
-    $table->text('catatan')->nullable();
-    $table->decimal('total_harga', 12,2)->default(0);
+            $table->id();
+    $table->foreignId('kunjungan_id')->constrained()->cascadeOnDelete();
+    $table->foreignId('obat_id')->constrained()->cascadeOnDelete();
+    $table->integer('jumlah')->default(1);
+    $table->string('aturan_pakai'); // contoh: "3x1 sesudah makan"
+    $table->string('catatan')->nullable(); // note tambahan dokter
+
     $table->timestamps();
-});
+        });
+```
+ 
 
-/9. create_resep_items_table/
-Schema::create('resep_items', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('resep_id')->constrained('reseps')->cascadeOnDelete();
-    $table->foreignId('obat_id')->constrained('obats')->cascadeOnDelete();
-    $table->integer('jumlah');
-    $table->text('aturan_pakai')->nullable();
-    $table->decimal('subtotal', 12,2)->default(0);
-    $table->timestamps();
-});
+# SEEDERS
 
-
-// =======================
-//  SEEDERS
-// =======================
+```php
 DB::table('dokters')->insert([
-            [
-                'poliklinik_id' => 1,
-                'kode_dokter' => 'DR001',
-                'nama'    => 'dr. Siti Waindah',
-                'spesialisasi' => 'Umum',
-                'no_str' => 'STR202501',
-                'no_sip' => 'SIP202316',
-                'no_hp' => '0813456789',
-                'email' => 'sitiw@rssehat.com',
-                'pengalaman_tahun' => 5,
-            ],
-            [
-                'poliklinik_id' => 2,
-                'kode_dokter' => 'DR002',
-                'nama'    => 'drg. Gina Regina',
-                'spesialisasi' => 'Gigi',
-                'no_str' => 'STR202417',
-                'no_sip' => 'SIP378965',
-                'no_hp' => '0856456729',
-                'email' => 'gina@rssehat.com',
-                'pengalaman_tahun' => 4,
-            ],
-        ]);
+    [
+        'poliklinik_id' => 1,
+        'kode_dokter' => 'DR001',
+        'nama'    => 'dr. Siti Waindah',
+        'spesialisasi' => 'Umum',
+        'no_str' => 'STR202501',
+        'no_sip' => 'SIP202316',
+        'no_hp' => '0813456789',
+        'email' => 'sitiw@rssehat.com',
+        'pengalaman_tahun' => 5,
+    ],
+]);
+```
 
+
+```php
 DB::table('jadwal_prakteks')->insert([
             [
                 'dokter_id' => 1,
@@ -196,7 +262,10 @@ DB::table('jadwal_prakteks')->insert([
                 'is_libur' => false,
             ],
         ]);
+```
 
+
+```php
 DB::table('kunjungans')->insert([
             [
                 'pasien_id' => 1,
@@ -209,7 +278,10 @@ DB::table('kunjungans')->insert([
                 'status' => 'selesai',
             ],
         ]);
+```
 
+
+```php
 DB::table('obats')->insert([
             [
                 'kode_obat' => 'OB001',
@@ -230,7 +302,10 @@ DB::table('obats')->insert([
                 'satuan' => 'strip',
             ],
         ]);
+```
 
+
+```php
 DB::table('pasiens')->insert([
             [
                 'no_rm' => 'RM0001',
@@ -261,7 +336,10 @@ DB::table('pasiens')->insert([
                 'pekerjaan' => 'Barista',
             ],
         ]);
+```
 
+
+```php
 DB::table('polikliniks')->insert([
             [
                 'rumah_sakit_id' => 1,
@@ -278,7 +356,10 @@ DB::table('polikliniks')->insert([
                 'jam_operasional' => '08:00 - 14:00',
             ],
         ]);
-        
+```
+
+
+```php
 DB::table('reseps')->insert([
             [
                 'kunjungan_id' => 1,
@@ -288,7 +369,10 @@ DB::table('reseps')->insert([
                 'catatan' => 'Minum air putih yang banyak, Hindari gorengan, makanan pedas, santan, roti, kaffein',
             ],
         ]);
+```
 
+
+```php
 DB::table('rumah_sakits')->insert([
         [
             'kode_rs' => 'RS001',
@@ -303,14 +387,21 @@ DB::table('rumah_sakits')->insert([
             'created_at' => now(),
         ],
     ]);
+```
 
-Setelah selesasi 
+
+## Menjalankan Seeder
+
+```bash
 dcm RumahSakit
 dcm Pasien
-dcm Polikinik
+dcm Poliklinik
 dcm Dokter
 dcm Kunjungan
 dcm Obat
 dcm Resep
-dcm JadwwaPraktek
-setelah nya dci
+dcm JadwalPraktek
+
+# setelah semua file siap
+dci
+```
